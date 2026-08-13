@@ -21,12 +21,13 @@ const Content = ({ parts }) => {
 }
 
 const Total = ({ parts }) => {
-  const total =
-    parts[0].exercises +
-    parts[1].exercises +
-    parts[2].exercises
+  const total = parts.reduce((sum, part) => sum + part.exercises, 0)
 
-  return <p><b>Total of {total} exercises</b></p>
+  return (
+    <p>
+      <b>Total of {total} exercises</b>
+    </p>
+  )
 }
 
 const Course = ({ course }) => {
@@ -45,19 +46,19 @@ const App = () => {
     name: 'Half Stack application development',
     parts: [
       {
+        id: 1,
         name: 'Fundamentals of React',
-        exercises: 10,
-        id: 1
+        exercises: 10
       },
       {
+        id: 2,
         name: 'Using props to pass data',
-        exercises: 7,
-        id: 2
+        exercises: 7
       },
       {
+        id: 3,
         name: 'State of a component',
-        exercises: 14,
-        id: 3
+        exercises: 14
       }
     ]
   }
