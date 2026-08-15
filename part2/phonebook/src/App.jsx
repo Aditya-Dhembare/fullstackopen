@@ -8,7 +8,6 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
-  // Notification state
   const [notification, setNotification] = useState({
     message: null,
     type: ''
@@ -76,18 +75,29 @@ const App = () => {
             setNewName('')
             setNewNumber('')
 
-            // Success notification for update
             setNotification({
-              message: `Updated ${response.data.name}`,
+              message: `${response.data.name} number updated`,
               type: 'success'
             })
+          })
+          .catch(error => {
+            setNotification({
+              message: `Information of ${existingPerson.name} was already removed from server`,
+              type: 'error'
+            })
+
+            setPersons(
+              persons.filter(
+                person => person.id !== existingPerson.id
+              )
+            )
           })
       }
 
       return
     }
 
-    // New person
+    // Create new person
     const personObject = {
       name: newName,
       number: newNumber
@@ -97,13 +107,19 @@ const App = () => {
       .create(personObject)
       .then(response => {
         setPersons(persons.concat(response.data))
+
         setNewName('')
         setNewNumber('')
 
-        // Success notification for adding
         setNotification({
-          message: `Added ${response.data.name}`,
+          message: `${response.data.name} added`,
           type: 'success'
+        })
+      })
+      .catch(error => {
+        setNotification({
+          message: 'Error adding person',
+          type: 'error'
         })
       })
   }
@@ -114,6 +130,21 @@ const App = () => {
       personService
         .remove(id)
         .then(() => {
+          setPersons(
+            persons.filter(person => person.id !== id)
+          )
+
+          setNotification({
+            message: `${name} deleted`,
+            type: 'success'
+          })
+        })
+        .catch(error => {
+          setNotification({
+            message: `Information of ${name} was already removed from server`,
+            type: 'error'
+          })
+
           setPersons(
             persons.filter(person => person.id !== id)
           )
@@ -141,7 +172,7 @@ const App = () => {
         filter shown with{' '}
         <input
           value={filter}
-          onChange={(event) =>
+          onChange={event =>
             setFilter(event.target.value)
           }
         />
@@ -154,7 +185,7 @@ const App = () => {
           name:{' '}
           <input
             value={newName}
-            onChange={(event) =>
+            onChange={event =>
               setNewName(event.target.value)
             }
           />
@@ -164,7 +195,7 @@ const App = () => {
           number:{' '}
           <input
             value={newNumber}
-            onChange={(event) =>
+            onChange={event =>
               setNewNumber(event.target.value)
             }
           />
