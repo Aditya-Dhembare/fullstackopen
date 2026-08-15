@@ -29,6 +29,16 @@
       "name": "aditya",
       "number": "9876543210",
       "id": "I4VCJnfVhVk"
+    },
+    {
+      "name": "aditya d",
+      "number": "122512",
+      "id": "rYOaRSIVPbk"
+    },
+    {
+      "name": "a",
+      "number": "10",
+      "id": "AHnSAHtYUHQ"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
