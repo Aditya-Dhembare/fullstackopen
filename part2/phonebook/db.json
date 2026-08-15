@@ -11,11 +11,6 @@
       "id": "2"
     },
     {
-      "name": "Dan Abramov",
-      "number": "12-43-234345",
-      "id": "3"
-    },
-    {
       "name": "Mary Poppendieck",
       "number": "39-23-6423122",
       "id": "4"
@@ -34,6 +29,11 @@
       "name": "a",
       "number": "10",
       "id": "AHnSAHtYUHQ"
+    },
+    {
+      "name": "ad",
+      "number": "111",
+      "id": "wa22hGq8ql4"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
