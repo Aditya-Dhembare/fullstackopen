@@ -5,6 +5,7 @@ const App = () => {
   const [search, setSearch] = useState('')
   const [countries, setCountries] = useState([])
   const [selectedCountry, setSelectedCountry] = useState(null)
+  const [weather, setWeather] = useState(null)
 
   useEffect(() => {
     axios
@@ -17,6 +18,12 @@ const App = () => {
   const handleSearch = (event) => {
     setSearch(event.target.value)
     setSelectedCountry(null)
+    setWeather(null)
+  }
+
+  const showCountry = (country) => {
+    setSelectedCountry(country)
+    setWeather(null)
   }
 
   const countriesToShow = countries.filter(country =>
@@ -25,13 +32,45 @@ const App = () => {
       .includes(search.toLowerCase())
   )
 
-  const showCountry = (country) => {
-    setSelectedCountry(country)
-  }
-
   const country = selectedCountry || (
-    countriesToShow.length === 1 ? countriesToShow[0] : null
+    countriesToShow.length === 1
+      ? countriesToShow[0]
+      : null
   )
+
+  useEffect(() => {
+    if (!country || !country.capital) {
+      return
+    }
+
+    const capital = country.capital[0]
+
+    axios
+      .get(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+          capital
+        )}&count=1&language=en&format=json`
+      )
+      .then(response => {
+        if (!response.data.results) {
+          return
+        }
+
+        const location = response.data.results[0]
+
+        return axios.get(
+          `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,wind_speed_10m&timezone=auto`
+        )
+      })
+      .then(response => {
+        if (response) {
+          setWeather(response.data.current)
+        }
+      })
+      .catch(error => {
+        console.log('Weather error:', error)
+      })
+  }, [country])
 
   return (
     <div>
@@ -76,15 +115,35 @@ const App = () => {
             alt={`Flag of ${country.name.common}`}
             width="150"
           />
+
+          {weather && (
+            <div>
+              <h3>
+                Weather in {country.capital?.[0]}
+              </h3>
+
+              <p>
+                Temperature: {weather.temperature_2m} °C
+              </p>
+
+              <p>
+                Wind speed: {weather.wind_speed_10m} km/h
+              </p>
+            </div>
+          )}
         </div>
       ) : countriesToShow.length > 10 ? (
-        <p>Too many matches, specify another filter</p>
+        <p>
+          Too many matches, specify another filter
+        </p>
       ) : countriesToShow.length > 1 ? (
         <div>
           {countriesToShow.map(country => (
             <p key={country.cca3}>
               {country.name.common}{' '}
-              <button onClick={() => showCountry(country)}>
+              <button
+                onClick={() => showCountry(country)}
+              >
                 show
               </button>
             </p>
