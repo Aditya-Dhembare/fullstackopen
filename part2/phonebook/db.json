@@ -27,13 +27,23 @@
     },
     {
       "name": "a",
-      "number": "10",
+      "number": "1",
       "id": "AHnSAHtYUHQ"
     },
     {
       "name": "ad",
       "number": "111",
       "id": "wa22hGq8ql4"
+    },
+    {
+      "name": "add",
+      "number": "12122",
+      "id": "5OVlcTn1jYc"
+    },
+    {
+      "name": "Test User",
+      "number": "123456789",
+      "id": "i_GMswKUAiQ"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

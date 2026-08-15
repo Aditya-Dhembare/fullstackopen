@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import personService from './services/persons'
+import Notification from './components/Notification'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -7,6 +8,13 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
+  // Notification state
+  const [notification, setNotification] = useState({
+    message: null,
+    type: ''
+  })
+
+  // Get persons from server
   useEffect(() => {
     personService
       .getAll()
@@ -15,13 +23,34 @@ const App = () => {
       })
   }, [])
 
+  // Hide notification after 5 seconds
+  useEffect(() => {
+    if (notification.message === null) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setNotification({
+        message: null,
+        type: ''
+      })
+    }, 5000)
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [notification])
+
+  // Add or update person
   const addPerson = (event) => {
     event.preventDefault()
 
     const existingPerson = persons.find(
-      person => person.name.toLowerCase() === newName.toLowerCase()
+      person =>
+        person.name.toLowerCase() === newName.toLowerCase()
     )
 
+    // Person already exists
     if (existingPerson) {
       const confirmUpdate = window.confirm(
         `${newName} is already added to phonebook, replace the old number with the new one?`
@@ -38,17 +67,27 @@ const App = () => {
           .then(response => {
             setPersons(
               persons.map(person =>
-                person.id === existingPerson.id ? response.data : person
+                person.id === existingPerson.id
+                  ? response.data
+                  : person
               )
             )
+
             setNewName('')
             setNewNumber('')
+
+            // Success notification for update
+            setNotification({
+              message: `Updated ${response.data.name}`,
+              type: 'success'
+            })
           })
       }
 
       return
     }
 
+    // New person
     const personObject = {
       name: newName,
       number: newNumber
@@ -60,30 +99,51 @@ const App = () => {
         setPersons(persons.concat(response.data))
         setNewName('')
         setNewNumber('')
+
+        // Success notification for adding
+        setNotification({
+          message: `Added ${response.data.name}`,
+          type: 'success'
+        })
       })
   }
 
+  // Delete person
   const deletePerson = (id, name) => {
     if (window.confirm(`Delete ${name}?`)) {
-      personService.remove(id).then(() => {
-        setPersons(persons.filter(person => person.id !== id))
-      })
+      personService
+        .remove(id)
+        .then(() => {
+          setPersons(
+            persons.filter(person => person.id !== id)
+          )
+        })
     }
   }
 
+  // Filter persons
   const personsToShow = persons.filter(person =>
-    person.name.toLowerCase().includes(filter.toLowerCase())
+    person.name
+      .toLowerCase()
+      .includes(filter.toLowerCase())
   )
 
   return (
     <div>
       <h2>Phonebook</h2>
 
+      <Notification
+        message={notification.message}
+        type={notification.type}
+      />
+
       <div>
         filter shown with{' '}
         <input
           value={filter}
-          onChange={(event) => setFilter(event.target.value)}
+          onChange={(event) =>
+            setFilter(event.target.value)
+          }
         />
       </div>
 
@@ -94,7 +154,9 @@ const App = () => {
           name:{' '}
           <input
             value={newName}
-            onChange={(event) => setNewName(event.target.value)}
+            onChange={(event) =>
+              setNewName(event.target.value)
+            }
           />
         </div>
 
@@ -102,12 +164,16 @@ const App = () => {
           number:{' '}
           <input
             value={newNumber}
-            onChange={(event) => setNewNumber(event.target.value)}
+            onChange={(event) =>
+              setNewNumber(event.target.value)
+            }
           />
         </div>
 
         <div>
-          <button type="submit">add</button>
+          <button type="submit">
+            add
+          </button>
         </div>
       </form>
 
@@ -116,7 +182,12 @@ const App = () => {
       {personsToShow.map(person => (
         <p key={person.id}>
           {person.name} {person.number}{' '}
-          <button onClick={() => deletePerson(person.id, person.name)}>
+
+          <button
+            onClick={() =>
+              deletePerson(person.id, person.name)
+            }
+          >
             delete
           </button>
         </p>
