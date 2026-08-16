@@ -27,10 +27,12 @@ let persons = [
   }
 ]
 
+// Get all persons
 app.get('/api/persons', (request, response) => {
   response.json(persons)
 })
 
+// Info page
 app.get('/info', (request, response) => {
   const currentTime = new Date()
 
@@ -40,8 +42,10 @@ app.get('/info', (request, response) => {
   `)
 })
 
+// Get one person
 app.get('/api/persons/:id', (request, response) => {
   const id = request.params.id
+
   const person = persons.find(person => person.id === id)
 
   if (person) {
@@ -51,6 +55,7 @@ app.get('/api/persons/:id', (request, response) => {
   }
 })
 
+// Delete one person
 app.delete('/api/persons/:id', (request, response) => {
   const id = request.params.id
 
@@ -59,20 +64,43 @@ app.delete('/api/persons/:id', (request, response) => {
   response.status(204).end()
 })
 
+// Add a new person
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
+  // Check name and number
+  if (!body.name || !body.number) {
+    return response.status(400).json({
+      error: 'name or number missing'
+    })
+  }
+
+  // Check duplicate name
+  const nameExists = persons.some(
+    person => person.name.toLowerCase() === body.name.toLowerCase()
+  )
+
+  if (nameExists) {
+    return response.status(400).json({
+      error: 'name must be unique'
+    })
+  }
+
+  // Create new person
   const person = {
     name: body.name,
     number: body.number,
     id: String(Math.floor(Math.random() * 1000000))
   }
 
+  // Add person to phonebook
   persons = persons.concat(person)
 
+  // Send created person
   response.json(person)
 })
 
+// Start server
 const PORT = 3001
 
 app.listen(PORT, () => {
