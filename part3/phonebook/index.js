@@ -1,4 +1,5 @@
 const express = require('express')
+const morgan = require('morgan')
 
 const app = express()
 
@@ -27,12 +28,15 @@ let persons = [
   }
 ]
 
-// Get all persons
+// Morgan logger
+app.use(morgan('tiny'))
+
+// GET all persons
 app.get('/api/persons', (request, response) => {
   response.json(persons)
 })
 
-// Info page
+// GET info page
 app.get('/info', (request, response) => {
   const currentTime = new Date()
 
@@ -42,7 +46,7 @@ app.get('/info', (request, response) => {
   `)
 })
 
-// Get one person
+// GET one person
 app.get('/api/persons/:id', (request, response) => {
   const id = request.params.id
 
@@ -51,11 +55,13 @@ app.get('/api/persons/:id', (request, response) => {
   if (person) {
     response.json(person)
   } else {
-    response.status(404).end()
+    response.status(404).json({
+      error: 'person not found'
+    })
   }
 })
 
-// Delete one person
+// DELETE person
 app.delete('/api/persons/:id', (request, response) => {
   const id = request.params.id
 
@@ -64,18 +70,16 @@ app.delete('/api/persons/:id', (request, response) => {
   response.status(204).end()
 })
 
-// Add a new person
+// POST new person
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
-  // Check name and number
   if (!body.name || !body.number) {
     return response.status(400).json({
       error: 'name or number missing'
     })
   }
 
-  // Check duplicate name
   const nameExists = persons.some(
     person => person.name.toLowerCase() === body.name.toLowerCase()
   )
@@ -86,26 +90,30 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  // Create new person
-  const person = {
+  const newPerson = {
+    id: String(Math.floor(Math.random() * 1000000)),
     name: body.name,
-    number: body.number,
-    id: String(Math.floor(Math.random() * 1000000))
+    number: body.number
   }
 
-  // Add person to phonebook
-  persons = persons.concat(person)
+  persons = persons.concat(newPerson)
 
-  // Send created person
-  response.json(person)
+  response.status(200).json(newPerson)
 })
 
-// Start server
+// Unknown endpoint
+const unknownEndpoint = (request, response) => {
+  response.status(404).json({
+    error: 'unknown endpoint'
+  })
+}
+
+app.use(unknownEndpoint)
+
 const PORT = 3001
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
   console.log(`Persons API: http://localhost:${PORT}/api/persons`)
   console.log(`Info page: http://localhost:${PORT}/info`)
-  console.log(`Single person: http://localhost:${PORT}/api/persons/1`)
 })
