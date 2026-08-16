@@ -5,6 +5,18 @@ const app = express()
 
 app.use(express.json())
 
+// Morgan custom token to show POST request body
+morgan.token('body', (request) => {
+  return request.method === 'POST'
+    ? JSON.stringify(request.body)
+    : ''
+})
+
+// Morgan logging
+app.use(
+  morgan(':method :url :status :res[content-length] - :response-time ms :body')
+)
+
 let persons = [
   {
     id: '1',
@@ -28,15 +40,12 @@ let persons = [
   }
 ]
 
-// Morgan logger
-app.use(morgan('tiny'))
-
 // GET all persons
 app.get('/api/persons', (request, response) => {
   response.json(persons)
 })
 
-// GET info page
+// GET info
 app.get('/info', (request, response) => {
   const currentTime = new Date()
 
@@ -55,9 +64,7 @@ app.get('/api/persons/:id', (request, response) => {
   if (person) {
     response.json(person)
   } else {
-    response.status(404).json({
-      error: 'person not found'
-    })
+    response.status(404).end()
   }
 })
 
@@ -70,16 +77,18 @@ app.delete('/api/persons/:id', (request, response) => {
   response.status(204).end()
 })
 
-// POST new person
+// POST person
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
+  // Check name and number
   if (!body.name || !body.number) {
     return response.status(400).json({
       error: 'name or number missing'
     })
   }
 
+  // Check duplicate name
   const nameExists = persons.some(
     person => person.name.toLowerCase() === body.name.toLowerCase()
   )
@@ -90,15 +99,18 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  const newPerson = {
-    id: String(Math.floor(Math.random() * 1000000)),
+  // Generate random ID
+  const id = Math.floor(Math.random() * 1000000)
+
+  const person = {
+    id: String(id),
     name: body.name,
     number: body.number
   }
 
-  persons = persons.concat(newPerson)
+  persons = persons.concat(person)
 
-  response.status(200).json(newPerson)
+  response.status(200).json(person)
 })
 
 // Unknown endpoint
@@ -116,4 +128,5 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
   console.log(`Persons API: http://localhost:${PORT}/api/persons`)
   console.log(`Info page: http://localhost:${PORT}/info`)
+  console.log(`Single person: http://localhost:${PORT}/api/persons/1`)
 })
