@@ -1,15 +1,16 @@
 const express = require('express')
+const cors = require('cors')
 const morgan = require('morgan')
 
 const app = express()
 
+// Middleware
+app.use(cors())
 app.use(express.json())
 
-// Morgan custom token to show POST request body
+// Morgan custom token for POST request body
 morgan.token('body', (request) => {
-  return request.method === 'POST'
-    ? JSON.stringify(request.body)
-    : ''
+  return JSON.stringify(request.body)
 })
 
 // Morgan logging
@@ -17,6 +18,7 @@ app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 )
 
+// Phonebook data
 let persons = [
   {
     id: '1',
@@ -45,12 +47,13 @@ app.get('/api/persons', (request, response) => {
   response.json(persons)
 })
 
-// GET info
+// GET information
 app.get('/info', (request, response) => {
+  const numberOfPersons = persons.length
   const currentTime = new Date()
 
   response.send(`
-    <p>Phonebook has info for ${persons.length} people</p>
+    <p>Phonebook has info for ${numberOfPersons} people</p>
     <p>${currentTime}</p>
   `)
 })
@@ -58,26 +61,35 @@ app.get('/info', (request, response) => {
 // GET one person
 app.get('/api/persons/:id', (request, response) => {
   const id = request.params.id
-
   const person = persons.find(person => person.id === id)
 
   if (person) {
     response.json(person)
   } else {
-    response.status(404).end()
+    response.status(404).json({
+      error: 'person not found'
+    })
   }
 })
 
-// DELETE person
+// DELETE one person
 app.delete('/api/persons/:id', (request, response) => {
   const id = request.params.id
+
+  const person = persons.find(person => person.id === id)
+
+  if (!person) {
+    return response.status(404).json({
+      error: 'person not found'
+    })
+  }
 
   persons = persons.filter(person => person.id !== id)
 
   response.status(204).end()
 })
 
-// POST person
+// POST new person
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
@@ -99,34 +111,30 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  // Generate random ID
-  const id = Math.floor(Math.random() * 1000000)
-
-  const person = {
-    id: String(id),
+  const newPerson = {
+    id: Math.floor(Math.random() * 1000000).toString(),
     name: body.name,
     number: body.number
   }
 
-  persons = persons.concat(person)
+  persons = persons.concat(newPerson)
 
-  response.status(200).json(person)
+  response.status(200).json(newPerson)
 })
 
-// Unknown endpoint
-const unknownEndpoint = (request, response) => {
-  response.status(404).json({
+// Unknown endpoint middleware
+app.use((request, response) => {
+  response.status(404).send({
     error: 'unknown endpoint'
   })
-}
+})
 
-app.use(unknownEndpoint)
-
-const PORT = 3001
+// Port
+const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
   console.log(`Persons API: http://localhost:${PORT}/api/persons`)
   console.log(`Info page: http://localhost:${PORT}/info`)
   console.log(`Single person: http://localhost:${PORT}/api/persons/1`)
-})
+})  

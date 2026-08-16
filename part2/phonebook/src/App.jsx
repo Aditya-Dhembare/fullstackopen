@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import personService from './services/persons'
-import Notification from './components/Notification'
 
 const App = () => {
   const [persons, setPersons] = useState([])
@@ -8,173 +7,90 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
-  const [notification, setNotification] = useState({
-    message: null,
-    type: ''
-  })
-
-  // Get persons from server
   useEffect(() => {
     personService
       .getAll()
-      .then(response => {
-        setPersons(response.data)
+      .then(initialPersons => {
+        setPersons(initialPersons)
+      })
+      .catch(error => {
+        console.log('Error fetching persons:', error)
       })
   }, [])
 
-  // Hide notification after 5 seconds
-  useEffect(() => {
-    if (notification.message === null) {
-      return
-    }
-
-    const timer = setTimeout(() => {
-      setNotification({
-        message: null,
-        type: ''
-      })
-    }, 5000)
-
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [notification])
-
-  // Add or update person
   const addPerson = (event) => {
     event.preventDefault()
 
-    const existingPerson = persons.find(
-      person =>
-        person.name.toLowerCase() === newName.toLowerCase()
-    )
-
-    // Person already exists
-    if (existingPerson) {
-      const confirmUpdate = window.confirm(
-        `${newName} is already added to phonebook, replace the old number with the new one?`
-      )
-
-      if (confirmUpdate) {
-        const updatedPerson = {
-          ...existingPerson,
-          number: newNumber
-        }
-
-        personService
-          .update(existingPerson.id, updatedPerson)
-          .then(response => {
-            setPersons(
-              persons.map(person =>
-                person.id === existingPerson.id
-                  ? response.data
-                  : person
-              )
-            )
-
-            setNewName('')
-            setNewNumber('')
-
-            setNotification({
-              message: `${response.data.name} number updated`,
-              type: 'success'
-            })
-          })
-          .catch(error => {
-            setNotification({
-              message: `Information of ${existingPerson.name} was already removed from server`,
-              type: 'error'
-            })
-
-            setPersons(
-              persons.filter(
-                person => person.id !== existingPerson.id
-              )
-            )
-          })
-      }
-
-      return
-    }
-
-    // Create new person
     const personObject = {
       name: newName,
       number: newNumber
     }
 
+    const existingPerson = persons.find(
+      person => person.name.toLowerCase() === newName.toLowerCase()
+    )
+
+    if (existingPerson) {
+      alert(`${newName} is already added to phonebook`)
+      return
+    }
+
     personService
       .create(personObject)
-      .then(response => {
-        setPersons(persons.concat(response.data))
-
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
         setNewName('')
         setNewNumber('')
-
-        setNotification({
-          message: `${response.data.name} added`,
-          type: 'success'
-        })
       })
       .catch(error => {
-        setNotification({
-          message: 'Error adding person',
-          type: 'error'
-        })
+        console.log(error)
+
+        if (error.response) {
+          alert(error.response.data.error)
+        } else {
+          alert('Something went wrong')
+        }
       })
   }
 
-  // Delete person
   const deletePerson = (id, name) => {
     if (window.confirm(`Delete ${name}?`)) {
       personService
         .remove(id)
         .then(() => {
-          setPersons(
-            persons.filter(person => person.id !== id)
-          )
-
-          setNotification({
-            message: `${name} deleted`,
-            type: 'success'
-          })
+          setPersons(persons.filter(person => person.id !== id))
         })
         .catch(error => {
-          setNotification({
-            message: `Information of ${name} was already removed from server`,
-            type: 'error'
-          })
-
-          setPersons(
-            persons.filter(person => person.id !== id)
-          )
+          console.log(error)
         })
     }
   }
 
-  // Filter persons
+  const handleNameChange = (event) => {
+    setNewName(event.target.value)
+  }
+
+  const handleNumberChange = (event) => {
+    setNewNumber(event.target.value)
+  }
+
+  const handleFilterChange = (event) => {
+    setFilter(event.target.value)
+  }
+
   const personsToShow = persons.filter(person =>
-    person.name
-      .toLowerCase()
-      .includes(filter.toLowerCase())
+    person.name.toLowerCase().includes(filter.toLowerCase())
   )
 
   return (
     <div>
       <h2>Phonebook</h2>
 
-      <Notification
-        message={notification.message}
-        type={notification.type}
-      />
-
       <div>
         filter shown with{' '}
         <input
           value={filter}
-          onChange={event =>
-            setFilter(event.target.value)
-          }
+          onChange={handleFilterChange}
         />
       </div>
 
@@ -185,9 +101,7 @@ const App = () => {
           name:{' '}
           <input
             value={newName}
-            onChange={event =>
-              setNewName(event.target.value)
-            }
+            onChange={handleNameChange}
           />
         </div>
 
@@ -195,36 +109,27 @@ const App = () => {
           number:{' '}
           <input
             value={newNumber}
-            onChange={event =>
-              setNewNumber(event.target.value)
-            }
+            onChange={handleNumberChange}
           />
         </div>
 
         <div>
-          <button type="submit">
-            add
-          </button>
+          <button type="submit">add</button>
         </div>
       </form>
 
       <h2>Numbers</h2>
 
       {personsToShow.map(person => (
-        <p key={person.id}>
+        <div key={person.id}>
           {person.name} {person.number}{' '}
-
-          <button
-            onClick={() =>
-              deletePerson(person.id, person.name)
-            }
-          >
+          <button onClick={() => deletePerson(person.id, person.name)}>
             delete
           </button>
-        </p>
+        </div>
       ))}
     </div>
   )
 }
 
-export default App
+export default App  
