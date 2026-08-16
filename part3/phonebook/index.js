@@ -1,24 +1,19 @@
 const express = require('express')
-const cors = require('cors')
 const morgan = require('morgan')
 
 const app = express()
 
-// Middleware
-app.use(cors())
 app.use(express.json())
+app.use(express.static('dist'))
 
-// Morgan custom token for POST request body
 morgan.token('body', (request) => {
   return JSON.stringify(request.body)
 })
 
-// Morgan logging
 app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 )
 
-// Phonebook data
 let persons = [
   {
     id: '1',
@@ -49,12 +44,11 @@ app.get('/api/persons', (request, response) => {
 
 // GET information
 app.get('/info', (request, response) => {
-  const numberOfPersons = persons.length
-  const currentTime = new Date()
+  const date = new Date()
 
   response.send(`
-    <p>Phonebook has info for ${numberOfPersons} people</p>
-    <p>${currentTime}</p>
+    <p>Phonebook has info for ${persons.length} people</p>
+    <p>${date}</p>
   `)
 })
 
@@ -72,10 +66,9 @@ app.get('/api/persons/:id', (request, response) => {
   }
 })
 
-// DELETE one person
+// DELETE person
 app.delete('/api/persons/:id', (request, response) => {
   const id = request.params.id
-
   const person = persons.find(person => person.id === id)
 
   if (!person) {
@@ -93,14 +86,12 @@ app.delete('/api/persons/:id', (request, response) => {
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
-  // Check name and number
   if (!body.name || !body.number) {
     return response.status(400).json({
       error: 'name or number missing'
     })
   }
 
-  // Check duplicate name
   const nameExists = persons.some(
     person => person.name.toLowerCase() === body.name.toLowerCase()
   )
@@ -111,25 +102,27 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  const newPerson = {
-    id: Math.floor(Math.random() * 1000000).toString(),
+  const person = {
+    id: String(Math.floor(Math.random() * 1000000)),
     name: body.name,
     number: body.number
   }
 
-  persons = persons.concat(newPerson)
+  persons = persons.concat(person)
 
-  response.status(200).json(newPerson)
+  response.status(200).json(person)
 })
 
-// Unknown endpoint middleware
-app.use((request, response) => {
-  response.status(404).send({
+// Unknown endpoint
+const unknownEndpoint = (request, response) => {
+  response.status(404).json({
     error: 'unknown endpoint'
   })
-})
+}
 
-// Port
+app.use(unknownEndpoint)
+
+// PORT for Render, 3001 locally
 const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
@@ -137,4 +130,4 @@ app.listen(PORT, () => {
   console.log(`Persons API: http://localhost:${PORT}/api/persons`)
   console.log(`Info page: http://localhost:${PORT}/info`)
   console.log(`Single person: http://localhost:${PORT}/api/persons/1`)
-})  
+})
