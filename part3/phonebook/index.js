@@ -14,7 +14,7 @@ app.use(express.json())
 app.use(cors())
 app.use(morgan('tiny'))
 
-// Serve React frontend
+// Serve frontend
 app.use(express.static(path.join(__dirname, 'dist')))
 
 // GET all persons
@@ -45,6 +45,31 @@ app.get('/api/persons/:id', (request, response) => {
     })
 })
 
+// ADD a new person
+app.post('/api/persons', (request, response) => {
+  const body = request.body
+
+  if (!body.name || !body.number) {
+    return response.status(400).json({
+      error: 'name or number missing'
+    })
+  }
+
+  const person = new Person({
+    name: body.name,
+    number: body.number
+  })
+
+  person.save()
+    .then(savedPerson => {
+      response.json(savedPerson)
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(500).end()
+    })
+})
+
 // Info page
 app.get('/info', (request, response) => {
   Person.countDocuments({})
@@ -58,7 +83,9 @@ app.get('/info', (request, response) => {
 
 // Unknown endpoint
 const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: 'unknown endpoint' })
+  response.status(404).send({
+    error: 'unknown endpoint'
+  })
 }
 
 app.use(unknownEndpoint)
