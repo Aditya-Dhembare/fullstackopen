@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const morgan = require('morgan')
+const path = require('path')
 
 const app = express()
 
@@ -26,12 +27,16 @@ const Person = mongoose.model('Person', personSchema)
 app.use(express.static('dist'))
 app.use(express.json())
 
-morgan.token('body', request => {
-  return request.method === 'POST' ? JSON.stringify(request.body) : ''
+morgan.token('body', (request) => {
+  return request.method === 'POST'
+    ? JSON.stringify(request.body)
+    : ''
 })
 
 app.use(
-  morgan(':method :url :status :res[content-length] - :response-time ms :body')
+  morgan(
+    ':method :url :status :res[content-length] - :response-time ms :body'
+  )
 )
 
 // GET all persons
@@ -81,7 +86,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// INFO
+// Info
 app.get('/info', (request, response, next) => {
   Person.countDocuments({})
     .then(count => {
@@ -104,7 +109,7 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint)
 
-// Error handler
+// ERROR HANDLER
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
 
@@ -117,6 +122,7 @@ const errorHandler = (error, request, response, next) => {
   next(error)
 }
 
+// Error handler must be the LAST middleware
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
