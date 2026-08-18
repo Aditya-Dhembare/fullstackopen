@@ -34,12 +34,54 @@ const App = () => {
       number: newNumber
     }
 
+    // Check if the person already exists
+    const existingPerson = persons.find(
+      person =>
+        person.name.toLowerCase() === newName.toLowerCase()
+    )
+
+    // If person already exists
+    if (existingPerson) {
+      const replace = window.confirm(
+        `${newName} is already added to phonebook, replace the old number with a new one?`
+      )
+
+      if (replace) {
+        axios
+          .put(
+            `/api/persons/${existingPerson._id}`,
+            personObject
+          )
+          .then(response => {
+            setPersons(
+              persons.map(person =>
+                person._id === existingPerson._id
+                  ? response.data
+                  : person
+              )
+            )
+
+            setNewName('')
+            setNewNumber('')
+          })
+          .catch(error => {
+            console.log(error)
+          })
+      }
+
+      return
+    }
+
+    // Add new person
     axios
       .post('/api/persons', personObject)
       .then(response => {
         setPersons(persons.concat(response.data))
         setNewName('')
         setNewNumber('')
+      })
+      .catch(error => {
+        console.log(error)
       })
   }
 
@@ -54,7 +96,12 @@ const App = () => {
       axios
         .delete(`/api/persons/${id}`)
         .then(() => {
-          setPersons(persons.filter(person => person._id !== id))
+          setPersons(
+            persons.filter(person => person._id !== id)
+          )
+        })
+        .catch(error => {
+          console.log(error)
         })
     }
   }

@@ -80,8 +80,27 @@ app.post('/api/persons', (request, response, next) => {
 // DELETE a person
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
-    .then(() => {
+    .then(result => {
       response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+// UPDATE a person's number
+app.put('/api/persons/:id', (request, response, next) => {
+  const body = request.body
+
+  Person.findById(request.params.id)
+    .then(person => {
+      if (!person) {
+        return response.status(404).end()
+      }
+
+      person.number = body.number
+
+      return person.save().then(updatedPerson => {
+        response.json(updatedPerson)
+      })
     })
     .catch(error => next(error))
 })
@@ -109,7 +128,7 @@ const unknownEndpoint = (request, response) => {
 
 app.use(unknownEndpoint)
 
-// ERROR HANDLER
+// Error handler
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
 
@@ -122,7 +141,6 @@ const errorHandler = (error, request, response, next) => {
   next(error)
 }
 
-// Error handler must be the LAST middleware
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
