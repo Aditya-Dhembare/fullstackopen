@@ -17,13 +17,19 @@ mongoose.connect(url)
   })
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String
+  name: {
+    type: String,
+    minLength: 3,
+    required: true
+  },
+  number: {
+    type: String,
+    required: true
+  }
 })
 
 const Person = mongoose.model('Person', personSchema)
 
-// Middleware
 app.use(express.static('dist'))
 app.use(express.json())
 
@@ -86,7 +92,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// UPDATE a person's number
+// UPDATE a person
 app.put('/api/persons/:id', (request, response, next) => {
   const body = request.body
 
@@ -98,9 +104,10 @@ app.put('/api/persons/:id', (request, response, next) => {
 
       person.number = body.number
 
-      return person.save().then(updatedPerson => {
-        response.json(updatedPerson)
-      })
+      return person.save()
+        .then(updatedPerson => {
+          response.json(updatedPerson)
+        })
     })
     .catch(error => next(error))
 })
@@ -138,12 +145,17 @@ const errorHandler = (error, request, response, next) => {
     })
   }
 
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({
+      error: error.message
+    })
+  }
+
   next(error)
 }
 
 app.use(errorHandler)
 
-// Start server
 const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
