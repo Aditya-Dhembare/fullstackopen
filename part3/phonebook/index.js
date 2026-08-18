@@ -24,7 +24,12 @@ const personSchema = new mongoose.Schema({
   },
   number: {
     type: String,
-    required: true
+    required: true,
+    minLength: 8,
+    validate: {
+      validator: value => /^\d{2,3}-\d+$/.test(value),
+      message: props => `${props.value} is not a valid phone number!`
+    }
   }
 })
 
@@ -86,7 +91,7 @@ app.post('/api/persons', (request, response, next) => {
 // DELETE a person
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
-    .then(result => {
+    .then(() => {
       response.status(204).end()
     })
     .catch(error => next(error))
