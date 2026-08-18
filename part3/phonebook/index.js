@@ -1,7 +1,6 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const morgan = require('morgan')
-const path = require('path')
 
 const app = express()
 
@@ -24,10 +23,11 @@ const personSchema = new mongoose.Schema({
 
 const Person = mongoose.model('Person', personSchema)
 
+// Middleware
 app.use(express.static('dist'))
 app.use(express.json())
 
-morgan.token('body', (request) => {
+morgan.token('body', request => {
   return request.method === 'POST'
     ? JSON.stringify(request.body)
     : ''
@@ -105,7 +105,7 @@ app.put('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// Info
+// INFO
 app.get('/info', (request, response, next) => {
   Person.countDocuments({})
     .then(count => {
@@ -143,6 +143,7 @@ const errorHandler = (error, request, response, next) => {
 
 app.use(errorHandler)
 
+// Start server
 const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
