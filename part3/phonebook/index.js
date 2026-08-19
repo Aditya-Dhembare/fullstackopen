@@ -1,14 +1,24 @@
 const express = require('express')
 const mongoose = require('mongoose')
+const cors = require('cors')
 const morgan = require('morgan')
+const path = require('path')
 
 const app = express()
 
-mongoose.set('strictQuery', false)
+app.use(express.json())
+app.use(cors())
+app.use(morgan('tiny'))
 
-const url = process.env.MONGODB_URI
+const mongoUrl = process.env.MONGODB_URI
 
-mongoose.connect(url)
+if (!mongoUrl) {
+  console.error('MONGODB_URI is not defined')
+  process.exit(1)
+}
+
+mongoose
+  .connect(mongoUrl)
   .then(() => {
     console.log('connected to MongoDB')
   })
@@ -24,42 +34,40 @@ const personSchema = new mongoose.Schema({
   },
   number: {
     type: String,
-    required: true,
     minLength: 8,
+    required: true,
     validate: {
-      validator: value => /^\d{2,3}-\d+$/.test(value),
+      validator: value => {
+        return /^\d{2,3}-\d+$/.test(value)
+      },
       message: props => `${props.value} is not a valid phone number!`
     }
   }
 })
 
-const Person = mongoose.model('Person', personSchema)
-
-app.use(express.static('dist'))
-app.use(express.json())
-
-morgan.token('body', request => {
-  return request.method === 'POST' || request.method === 'PUT'
-    ? JSON.stringify(request.body)
-    : ''
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
 })
 
-app.use(
-  morgan(
-    ':method :url :status :res[content-length] - :response-time ms :body'
-  )
-)
+const Person = mongoose.model('Person', personSchema)
 
-// GET all persons
-app.get('/api/persons', (request, response, next) => {
+app.get('/api/persons', (request, response) => {
   Person.find({})
     .then(persons => {
       response.json(persons)
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.log(error)
+      response.status(500).json({
+        error: 'database error'
+      })
+    })
 })
 
-// GET one person
 app.get('/api/persons/:id', (request, response, next) => {
   Person.findById(request.params.id)
     .then(person => {
@@ -72,7 +80,6 @@ app.get('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// ADD a new person
 app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
@@ -81,24 +88,25 @@ app.post('/api/persons', (request, response, next) => {
     number: body.number
   })
 
-  person.save()
+  person
+    .save()
     .then(savedPerson => {
       response.status(200).json(savedPerson)
     })
     .catch(error => next(error))
 })
 
-// UPDATE a person
 app.put('/api/persons/:id', (request, response, next) => {
   const body = request.body
 
   Person.findByIdAndUpdate(
     request.params.id,
     {
+      name: body.name,
       number: body.number
     },
     {
-      new: true,
+      returnDocument: 'after',
       runValidators: true
     }
   )
@@ -112,7 +120,6 @@ app.put('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// DELETE a person
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
     .then(() => {
@@ -121,30 +128,22 @@ app.delete('/api/persons/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-// INFO
-app.get('/info', (request, response, next) => {
+app.get('/info', (request, response) => {
   Person.countDocuments({})
     .then(count => {
-      const date = new Date()
-
       response.send(`
         <p>Phonebook has info for ${count} people</p>
-        <p>${date}</p>
+        <p>${new Date()}</p>
       `)
     })
-    .catch(error => next(error))
+    .catch(error => {
+      console.log(error)
+      response.status(500).send('Database error')
+    })
 })
 
-// Unknown endpoint
-const unknownEndpoint = (request, response) => {
-  response.status(404).send({
-    error: 'unknown endpoint'
-  })
-}
+app.use(express.static(path.join(__dirname, 'dist')))
 
-app.use(unknownEndpoint)
-
-// Error handler
 const errorHandler = (error, request, response, next) => {
   console.error(error.message)
 
@@ -164,6 +163,12 @@ const errorHandler = (error, request, response, next) => {
 }
 
 app.use(errorHandler)
+
+app.get('/*splat', (request, response) => {
+  response.sendFile(
+    path.join(__dirname, 'dist', 'index.html')
+  )
+})
 
 const PORT = process.env.PORT || 3001
 
