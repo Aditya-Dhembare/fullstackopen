@@ -1,121 +1,124 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-
-const Person = ({ person, deletePerson }) => {
-  return (
-    <div>
-      {person.name} {person.number}
-      <button onClick={() => deletePerson(person._id)}>
-        delete
-      </button>
-    </div>
-  )
-}
+import personService from './services/persons'
 
 const App = () => {
   const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
-    axios
-      .get('/api/persons')
+    personService
+      .getAll()
       .then(response => {
         setPersons(response.data)
+      })
+      .catch(error => {
+        console.log(error)
       })
   }, [])
 
   const addPerson = event => {
     event.preventDefault()
 
-    const personObject = {
+    const existingPerson = persons.find(
+      person => person.name.toLowerCase() === newName.toLowerCase()
+    )
+
+    if (existingPerson) {
+      const confirmUpdate = window.confirm(
+        `${newName} is already added to phonebook. Replace the old number with a new one?`
+      )
+
+      if (!confirmUpdate) {
+        return
+      }
+
+      const updatedPerson = {
+        ...existingPerson,
+        number: newNumber
+      }
+
+      personService
+        .update(existingPerson.id || existingPerson._id, updatedPerson)
+        .then(response => {
+          setPersons(
+            persons.map(person =>
+              person.id === existingPerson.id ||
+              person._id === existingPerson._id
+                ? response.data
+                : person
+            )
+          )
+
+          setNewName('')
+          setNewNumber('')
+          setErrorMessage(null)
+        })
+        .catch(error => {
+          setErrorMessage(error.response?.data?.error || 'Update failed')
+
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
+        })
+
+      return
+    }
+
+    const newPerson = {
       name: newName,
       number: newNumber
     }
 
-    // Check if the person already exists
-    const existingPerson = persons.find(
-      person =>
-        person.name.toLowerCase() === newName.toLowerCase()
-    )
-
-    // If person already exists
-    if (existingPerson) {
-      const replace = window.confirm(
-        `${newName} is already added to phonebook, replace the old number with a new one?`
-      )
-
-      if (replace) {
-        axios
-          .put(
-            `/api/persons/${existingPerson._id}`,
-            personObject
-          )
-          .then(response => {
-            setPersons(
-              persons.map(person =>
-                person._id === existingPerson._id
-                  ? response.data
-                  : person
-              )
-            )
-
-            setNewName('')
-            setNewNumber('')
-          })
-          .catch(error => {
-            console.log(error)
-          })
-      }
-
-      return
-    }
-
-    // Add new person
-    axios
-      .post('/api/persons', personObject)
+    personService
+      .create(newPerson)
       .then(response => {
         setPersons(persons.concat(response.data))
         setNewName('')
         setNewNumber('')
+        setErrorMessage(null)
       })
       .catch(error => {
-        console.log(error)
+        setErrorMessage(error.response?.data?.error || 'Failed to add person')
+
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
       })
   }
 
-  const deletePerson = id => {
-    const person = persons.find(person => person._id === id)
+  const deletePerson = person => {
+    const confirmDelete = window.confirm(
+      `Delete ${person.name}?`
+    )
 
-    if (!person) {
+    if (!confirmDelete) {
       return
     }
 
-    if (window.confirm(`Delete ${person.name}?`)) {
-      axios
-        .delete(`/api/persons/${id}`)
-        .then(() => {
-          setPersons(
-            persons.filter(person => person._id !== id)
-          )
-        })
-        .catch(error => {
-          console.log(error)
-        })
-    }
-  }
+    const id = person.id || person._id
 
-  const handleNameChange = event => {
-    setNewName(event.target.value)
-  }
+    personService
+      .remove(id)
+      .then(() => {
+        setPersons(
+          persons.filter(person => {
+            const personId = person.id || person._id
+            return personId !== id
+          })
+        )
+      })
+      .catch(error => {
+        setErrorMessage(
+          error.response?.data?.error || 'Failed to delete person'
+        )
 
-  const handleNumberChange = event => {
-    setNewNumber(event.target.value)
-  }
-
-  const handleFilterChange = event => {
-    setFilter(event.target.value)
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+      })
   }
 
   const personsToShow = persons.filter(person =>
@@ -124,13 +127,26 @@ const App = () => {
 
   return (
     <div>
-      <h2>Phonebook</h2>
+      <h1>Phonebook</h1>
+
+      {errorMessage && (
+        <div
+          style={{
+            color: 'red',
+            background: '#ffe6e6',
+            padding: '10px',
+            marginBottom: '10px'
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
 
       <div>
-        filter shown with
+        filter shown with{' '}
         <input
           value={filter}
-          onChange={handleFilterChange}
+          onChange={event => setFilter(event.target.value)}
         />
       </div>
 
@@ -138,34 +154,33 @@ const App = () => {
 
       <form onSubmit={addPerson}>
         <div>
-          name:
+          name:{' '}
           <input
             value={newName}
-            onChange={handleNameChange}
+            onChange={event => setNewName(event.target.value)}
           />
         </div>
 
         <div>
-          number:
+          number:{' '}
           <input
             value={newNumber}
-            onChange={handleNumberChange}
+            onChange={event => setNewNumber(event.target.value)}
           />
         </div>
 
-        <div>
-          <button type="submit">add</button>
-        </div>
+        <button type="submit">add</button>
       </form>
 
       <h2>Numbers</h2>
 
       {personsToShow.map(person => (
-        <Person
-          key={person._id}
-          person={person}
-          deletePerson={deletePerson}
-        />
+        <div key={person.id || person._id}>
+          {person.name} {person.number}{' '}
+          <button onClick={() => deletePerson(person)}>
+            delete
+          </button>
+        </div>
       ))}
     </div>
   )
