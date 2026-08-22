@@ -9,7 +9,7 @@ const helper = require('./test_helper')
 
 const api = supertest(app)
 
-// Reset the database before every test
+// Reset database before every test
 beforeEach(async () => {
   await Blog.deleteMany({})
 
@@ -79,6 +79,23 @@ test('a valid blog can be added', async () => {
   const titles = response.body.map(blog => blog.title)
 
   assert(titles.includes('Testing with Supertest'))
+})
+
+// 4.11
+test('a blog without likes defaults to 0', async () => {
+  const newBlog = {
+    title: 'Blog without likes',
+    author: 'Full Stack Open',
+    url: 'https://fullstackopen.com'
+  }
+
+  const response = await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.likes, 0)
 })
 
 // Clean database and close MongoDB connection
