@@ -37,3 +37,37 @@ describe('total likes', () => {
     expect(result).toBe(12)
   })
 })
+
+describe('favorite blog', () => {
+  test('returns the blog with the most likes', () => {
+    const blogs = [
+      {
+        title: 'First blog',
+        author: 'Author 1',
+        url: 'https://example.com/1',
+        likes: 5,
+      },
+      {
+        title: 'Second blog',
+        author: 'Author 2',
+        url: 'https://example.com/2',
+        likes: 12,
+      },
+      {
+        title: 'Third blog',
+        author: 'Author 3',
+        url: 'https://example.com/3',
+        likes: 8,
+      },
+    ]
+
+    const result = listHelper.favoriteBlog(blogs)
+
+    expect(result).toEqual({
+      title: 'Second blog',
+      author: 'Author 2',
+      url: 'https://example.com/2',
+      likes: 12,
+    })
+  })
+})
