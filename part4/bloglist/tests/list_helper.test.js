@@ -112,3 +112,43 @@ describe('most blogs', () => {
     expect(result).toBe('Michael Chan')
   })
 })
+describe('most likes', () => {
+  test('returns the author who has the most likes', () => {
+    const blogs = [
+      {
+        title: 'First blog',
+        author: 'Michael Chan',
+        url: 'https://example.com/1',
+        likes: 5,
+      },
+      {
+        title: 'Second blog',
+        author: 'Michael Chan',
+        url: 'https://example.com/2',
+        likes: 10,
+      },
+      {
+        title: 'Third blog',
+        author: 'Henri Heikkinen',
+        url: 'https://example.com/3',
+        likes: 8,
+      },
+      {
+        title: 'Fourth blog',
+        author: 'Michael Chan',
+        url: 'https://example.com/4',
+        likes: 7,
+      },
+      {
+        title: 'Fifth blog',
+        author: 'Henri Heikkinen',
+        url: 'https://example.com/5',
+        likes: 12,
+      },
+    ]
+
+    const result = listHelper.mostLikes(blogs)
+
+    expect(result).toBe('Michael Chan')
+  })
+})
