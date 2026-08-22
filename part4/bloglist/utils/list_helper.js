@@ -1,45 +1,76 @@
-const dummy = (blogs) => {
-  return 1
-}
-
 const totalLikes = (blogs) => {
   return blogs.reduce((sum, blog) => sum + blog.likes, 0)
 }
 
 const favoriteBlog = (blogs) => {
-  return blogs.reduce((favorite, blog) =>
-    blog.likes > favorite.likes ? blog : favorite
-  )
+  if (blogs.length === 0) {
+    return null
+  }
+
+  return blogs.reduce((favorite, blog) => {
+    return blog.likes > favorite.likes ? blog : favorite
+  })
 }
 
 const mostBlogs = (blogs) => {
-  const blogCounts = {}
+  if (blogs.length === 0) {
+    return null
+  }
 
-  blogs.forEach((blog) => {
-    blogCounts[blog.author] = (blogCounts[blog.author] || 0) + 1
+  const authorCounts = {}
+
+  blogs.forEach(blog => {
+    authorCounts[blog.author] =
+      (authorCounts[blog.author] || 0) + 1
   })
 
-  return Object.entries(blogCounts).reduce((most, current) =>
-    current[1] > most[1] ? current : most
-  )[0]
+  let mostBlogAuthor = null
+  let mostBlogCount = 0
+
+  for (const author in authorCounts) {
+    if (authorCounts[author] > mostBlogCount) {
+      mostBlogAuthor = author
+      mostBlogCount = authorCounts[author]
+    }
+  }
+
+  return {
+    author: mostBlogAuthor,
+    blogs: mostBlogCount
+  }
 }
 
 const mostLikes = (blogs) => {
-  const likeCounts = {}
+  if (blogs.length === 0) {
+    return null
+  }
 
-  blogs.forEach((blog) => {
-    likeCounts[blog.author] = (likeCounts[blog.author] || 0) + blog.likes
+  const authorLikes = {}
+
+  blogs.forEach(blog => {
+    authorLikes[blog.author] =
+      (authorLikes[blog.author] || 0) + blog.likes
   })
 
-  return Object.entries(likeCounts).reduce((most, current) =>
-    current[1] > most[1] ? current : most
-  )[0]
+  let mostLikesAuthor = null
+  let mostLikeCount = 0
+
+  for (const author in authorLikes) {
+    if (authorLikes[author] > mostLikeCount) {
+      mostLikesAuthor = author
+      mostLikeCount = authorLikes[author]
+    }
+  }
+
+  return {
+    author: mostLikesAuthor,
+    likes: mostLikeCount
+  }
 }
 
 module.exports = {
-  dummy,
   totalLikes,
   favoriteBlog,
   mostBlogs,
-  mostLikes,
+  mostLikes
 }
